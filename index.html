@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flujogramas de tesis UNASAM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" rel="stylesheet">
+<style>
+/* Idea: flujograma de calles verticales (una por rol), lectura de arriba hacia abajo, plazos acumulados por escenario. */
+:root{
+  --bg:#f3f5f8; --surface:#ffffff; --ink:#14202b; --muted:#5a6b7a; --line:#d3dce5; --accent:#0b4f8a;
+  --warn:#9a6700; --warn-bg:#fff4d6; --on-c:#ffffff; --shadow:0 8px 28px rgba(15,30,50,.18);
+  --c-tes:#0f766e; --c-ase:#a85a0a; --c-dec:#1e4fbf; --c-dir:#6d3fd0; --c-jur:#b4234a; --c-cf:#4b5a6a; --c-ugt:#4a7a12; --c-rec:#9a3a12;
+  --f-display:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1620; --surface:#16212d; --ink:#e6edf3; --muted:#9bacbb; --line:#2b3a49; --accent:#6cb2f0;
+    --warn:#f0c15a; --warn-bg:#3a2e10; --on-c:#0b1118; --shadow:0 8px 28px rgba(0,0,0,.55);
+    --c-tes:#3fc4b3; --c-ase:#e8a24a; --c-dec:#7aa2ff; --c-dir:#a58cff; --c-jur:#ff7b9c; --c-cf:#9fb0c0; --c-ugt:#9bd24a; --c-rec:#ff9a6b;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e1620; --surface:#16212d; --ink:#e6edf3; --muted:#9bacbb; --line:#2b3a49; --accent:#6cb2f0;
+  --warn:#f0c15a; --warn-bg:#3a2e10; --on-c:#0b1118; --shadow:0 8px 28px rgba(0,0,0,.55);
+  --c-tes:#3fc4b3; --c-ase:#e8a24a; --c-dec:#7aa2ff; --c-dir:#a58cff; --c-jur:#ff7b9c; --c-cf:#9fb0c0; --c-ugt:#9bd24a; --c-rec:#ff9a6b;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--f-body)}
+.wrap{max-width:1320px;margin:0 auto;padding:28px 20px 56px;display:flex;flex-direction:column;gap:20px}
+header h1{font:700 clamp(26px,4vw,38px)/1.1 var(--f-display);margin:0 0 6px;text-wrap:balance}
+header p{margin:0;color:var(--muted);max-width:75ch}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:600;margin-bottom:6px}
+
+.tabs{display:flex;gap:8px;flex-wrap:wrap}
+.tab{font:600 14px var(--f-body);padding:10px 16px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;text-align:left}
+.tab small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.tab[aria-selected="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);color:var(--accent)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.controls{display:grid;grid-template-columns:1fr auto;gap:16px 24px;align-items:start}
+@media(max-width:820px){.controls{grid-template-columns:1fr}}
+.ctl-title{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600;margin:0 0 8px}
+.scen{display:flex;flex-wrap:wrap;gap:8px}
+.scen label{display:flex;gap:8px;align-items:center;padding:8px 12px;border:1px solid var(--line);border-radius:999px;cursor:pointer;font-size:13.5px;background:var(--bg)}
+.scen input{accent-color:var(--accent);margin:0}
+.scen label:has(input:checked){border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface));font-weight:500}
+.date label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+.date input{font:500 14px var(--f-body);padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+.date small{display:block;color:var(--muted);font-size:12px;margin-top:6px;max-width:30ch}
+
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.card{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--surface)}
+.card .k{font-size:12.5px;color:var(--muted);margin:0 0 4px}
+.card .v{font:700 30px/1 var(--f-display);font-variant-numeric:tabular-nums}
+.card .v span{font:500 14px var(--f-body);color:var(--muted);margin-left:6px}
+.card .s{font-size:12.5px;color:var(--muted);margin:8px 0 0}
+.bar{display:flex;height:14px;border-radius:7px;overflow:hidden;margin-top:12px;background:var(--line);gap:1px}
+.bar i{display:block;background:var(--c);min-width:3px}
+.warnbox{background:var(--warn-bg);color:var(--ink);border:1px solid color-mix(in srgb,var(--warn) 45%,transparent);border-radius:10px;padding:8px 12px;font-size:13px}
+
+.legend{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.role{display:inline-flex;gap:7px;align-items:center;font:500 13px var(--f-body);padding:6px 11px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.role::before{content:"";width:10px;height:10px;border-radius:3px;background:var(--c)}
+.role[aria-pressed="true"]{border-color:var(--c);box-shadow:inset 0 0 0 1px var(--c);background:color-mix(in srgb,var(--c) 12%,var(--surface))}
+.shapes{display:flex;gap:16px;flex-wrap:wrap;color:var(--muted);font-size:12.5px;margin-left:auto}
+.shapes span{display:inline-flex;align-items:center;gap:6px}
+.sh{width:22px;height:14px;border:2px solid var(--muted);background:transparent;display:inline-block}
+.sh.st{border-radius:4px}.sh.dc{clip-path:polygon(14% 0,86% 0,100% 50%,86% 100%,14% 100%,0 50%);background:var(--muted);border:0}
+.sh.rs{clip-path:polygon(0 0,70% 0,100% 30%,100% 100%,0 100%);background:var(--muted);border:0}
+.sh.pl{border-radius:10px;background:var(--muted);border:0}
+
+.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+.stage{position:relative;margin:0 auto}
+.stripe{position:absolute;top:0;bottom:0;background:color-mix(in srgb,var(--c) 4.5%,transparent);border-left:1px solid color-mix(in srgb,var(--c) 18%,transparent)}
+.band{position:absolute;left:0;right:0;background:color-mix(in srgb,var(--ink) 5%,var(--surface));border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.band .ph{position:absolute;left:14px;top:5px;font:600 13px var(--f-body);display:flex;gap:10px;align-items:center;white-space:nowrap;z-index:2;background:color-mix(in srgb,var(--ink) 5%,var(--surface));padding-right:8px}
+.band .ph b{font-variant-numeric:tabular-nums;font-weight:600;font-size:12px;color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 40%,transparent);padding:1px 8px;border-radius:999px}
+.band .ln{position:absolute;bottom:3px;font:600 10.5px var(--f-body);text-transform:uppercase;letter-spacing:.05em;text-align:center;color:var(--c)}
+svg.edges{position:absolute;inset:0;pointer-events:none;overflow:visible}
+.e{fill:none;stroke:var(--muted);stroke-width:1.6;stroke-linejoin:round}
+.e.alt{stroke-dasharray:5 4}
+.e.loop{stroke:var(--warn);stroke-dasharray:6 4}
+.e.on{stroke:var(--ink);stroke-width:2.4}
+.e.on.loop{stroke:var(--warn)}
+.e.off{opacity:.25}
+.elabel{font:600 11px var(--f-body);fill:var(--ink);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round}
+.elabel.off{opacity:.35}
+.mk-on{fill:var(--ink)}.mk-off{fill:var(--muted)}.mk-loop{fill:var(--warn)}
+
+.node{position:absolute;margin:0;padding:8px 10px 7px;border:1px solid color-mix(in srgb,var(--c) 55%,var(--line));border-left:5px solid var(--c);border-radius:9px;background:color-mix(in srgb,var(--c) 9%,var(--surface));color:var(--ink);font:500 12.5px/1.25 var(--f-body);text-align:left;cursor:pointer;display:flex;flex-direction:column;justify-content:space-between;gap:4px;transition:opacity .15s,box-shadow .15s}
+.node:hover,.node.sel{box-shadow:0 0 0 2px var(--c),0 6px 16px rgba(0,0,0,.18);z-index:5}
+.node .t{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.chips{display:flex;gap:5px;flex-wrap:wrap}
+.chip{font:600 10.5px var(--f-body);padding:1px 7px;border-radius:999px;background:color-mix(in srgb,var(--c) 18%,var(--surface));color:var(--ink);white-space:nowrap;font-variant-numeric:tabular-nums}
+.chip.cum{background:var(--c);color:var(--on-c)}
+.chip.nop{background:transparent;border:1px dashed var(--muted);color:var(--muted)}
+.chip.dt{background:transparent;border:1px solid var(--line);color:var(--muted)}
+.node.pill{border-radius:999px;border:0;background:var(--c);color:var(--on-c);padding:8px 16px;align-items:center;text-align:center;justify-content:center}
+.node.pill .chip{background:rgba(255,255,255,.22);color:inherit}
+.node.pill .chip.cum{background:rgba(255,255,255,.9);color:#10202b}
+.node.decision,.node.resolution{border:0;background:var(--c);padding:0}
+.node.decision::before,.node.resolution::before{content:"";position:absolute;inset:2px;background:color-mix(in srgb,var(--c) 10%,var(--surface))}
+.node.decision{clip-path:polygon(12% 0,88% 0,100% 50%,88% 100%,12% 100%,0 50%);align-items:center;justify-content:center;text-align:center}
+.node.decision::before{clip-path:polygon(12.4% 0,87.6% 0,100% 50%,87.6% 100%,12.4% 100%,0 50%);inset:2px}
+.node.decision .in,.node.resolution .in{position:relative;padding:8px 16px;display:flex;flex-direction:column;gap:4px;height:100%;justify-content:space-between}
+.node.decision .in{align-items:center;justify-content:center;font-weight:600}
+.node.resolution{clip-path:polygon(0 0,calc(100% - 18px) 0,100% 18px,100% 100%,0 100%)}
+.node.resolution::before{clip-path:polygon(0 0,calc(100% - 18.5px) 0,100% 18.5px,100% 100%,0 100%)}
+.node.opt{border-style:dashed}
+.node.off{opacity:.33}
+.node.rdim{opacity:.18}
+.node.pill.off{opacity:.4}
+
+#tip{position:fixed;z-index:50;width:min(340px,calc(100vw - 24px));background:var(--surface);color:var(--ink);border:1px solid var(--line);border-top:5px solid var(--c,var(--accent));border-radius:12px;box-shadow:var(--shadow);padding:12px 14px;font-size:13px;line-height:1.45;display:none}
+#tip.show{display:block}
+#tip h3{font:700 15px/1.25 var(--f-display);margin:0 0 6px;padding-right:22px}
+#tip .rl{display:inline-block;font:600 11px var(--f-body);padding:1px 8px;border-radius:999px;background:var(--c);color:var(--on-c);margin-bottom:8px}
+#tip dl{margin:8px 0 0;display:grid;grid-template-columns:auto 1fr;gap:3px 10px}
+#tip dt{color:var(--muted)}#tip dd{margin:0;font-variant-numeric:tabular-nums}
+#tip ul{margin:4px 0 0;padding-left:18px}
+#tip .sub{font-size:12px;color:var(--muted);margin:8px 0 0}
+#tip .x{position:absolute;top:6px;right:8px;border:0;background:none;color:var(--muted);font-size:18px;cursor:pointer;display:none}
+#tip.pinned .x{display:block}
+
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+h2{font:700 20px/1.2 var(--f-display);margin:0 0 10px}
+.check{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.check li label{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border:1px solid var(--line);border-radius:9px;cursor:pointer;background:var(--bg)}
+.check input{margin-top:3px;accent-color:var(--accent)}
+.check .who{margin-left:auto;font-size:11.5px;color:var(--muted);white-space:nowrap;padding-left:8px}
+.check li:has(input:checked) span.tx{text-decoration:line-through;color:var(--muted)}
+.prog{font-size:13px;color:var(--muted);margin:0 0 10px}
+.notes{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px}
+.notes li::marker{color:var(--accent)}
+.foot{font-size:12.5px;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">UNASAM · Facultad de Administración y Turismo</div>
+    <h1>Flujogramas del trámite de tesis</h1>
+    <p>Pasa el mouse (o toca) cada recuadro para ver quién actúa, cuántos días tiene, qué documentos se presentan y en qué artículo del reglamento se basa. Elige un escenario para ver los días acumulados de tu ruta.</p>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Flujograma">
+    <button class="tab" role="tab" id="tab-proyecto" data-flow="proyecto">1 · Proyecto de tesis<small>Presentación hasta resolución de aprobación</small></button>
+    <button class="tab" role="tab" id="tab-tesis" data-flow="tesis">2 · Informe final de tesis<small>Presentación, sustentación y título</small></button>
+  </div>
+
+  <section class="panel controls" aria-label="Escenario y fecha">
+    <div>
+      <p class="ctl-title">Escenario</p>
+      <div class="scen" id="scen"></div>
+    </div>
+    <div class="date">
+      <label for="d0">Fecha de presentación del expediente</label>
+      <input type="date" id="d0">
+      <small>Estima fechas con días hábiles de lunes a viernes. No descuenta feriados.</small>
+    </div>
+  </section>
+
+  <section class="summary" id="summary" aria-live="polite"></section>
+
+  <div class="legend" id="legend" aria-label="Roles"></div>
+
+  <div class="scroll"><div class="stage" id="stage"></div></div>
+
+  <div class="cols">
+    <section class="panel"><h2 id="ck-h">Expediente a presentar</h2><div id="ck"></div></section>
+    <section class="panel"><h2>Puntos de atención</h2><ul class="notes" id="notes"></ul></section>
+  </div>
+
+  <p class="foot">Fuente: Reglamento General de Grados y Títulos, versión 2, 2026 (anexo de la Resolución de Consejo Universitario N.° 576-2026-UNASAM). Los plazos son los máximos que el reglamento fija a cada dependencia, en días hábiles salvo que se indique otra cosa. Esta herramienta es informativa: prevalece el texto del reglamento y las normas complementarias de la facultad.</p>
+</div>
+<div id="tip" role="tooltip"><button class="x" aria-label="Cerrar">×</button><div id="tipc"></div></div>
+
+<script>
+/* ---------- Datos ---------- */
+const ROLES={
+  tes:{n:"Tesista",f:"Tesista (egresado o bachiller)"},
+  ase:{n:"Asesor",f:"Asesor (docente ordinario)"},
+  dec:{n:"Decanato",f:"Decano y secretaría del Decanato"},
+  dir:{n:"Dir. de Escuela",f:"Director de la Escuela Profesional"},
+  jur:{n:"Jurado",f:"Jurado evaluador (presidente, secretario, vocal)"},
+  cf:{n:"Consejo de Facultad",f:"Consejo de Facultad"},
+  ugt:{n:"Grados y Títulos",f:"Unidad de Grados y Títulos de la facultad"},
+  rec:{n:"Rectorado / CU",f:"Rectorado y Consejo Universitario"}
+};
+const D=(n,w)=>({n,w});
+const N=(id,lane,row,type,t,o={})=>Object.assign({id,lane,row,type,t},o);
+const E=(from,to,o={})=>Object.assign({from,to},o);
+
+const FLOWS={
+proyecto:{
+  lanes:["tes","ase","dec","dir","jur","cf"],
+  start:"n1",
+  phases:["1 · Preparación del expediente","2 · Presentación","3 · Designación de asesor y jurado","4 · Revisión del proyecto","5 · Aprobación"],
+  segLabels:["Presentación hasta la resolución del Consejo de Facultad"],
+  nodes:[
+    N("n1","tes",0,"start","Elabora el proyecto de tesis",{ph:0,art:"Arts. 14.1.2 y 23 · Anexos 2 y 3",
+      desc:"Redacta el proyecto en formato digital, vinculado a una línea de investigación de la Escuela de Administración. La estructura es la del Anexo 2 (cuantitativo) o la del Anexo 3 (cualitativo).",
+      docs:[D("Proyecto de tesis digital (Anexo 2 o 3)","Tesista")]}),
+    N("n2","ase",1,"step","Acepta asesorar y emite sus reportes",{ph:0,art:"Arts. 14.1.3 y 24 · Disp. Sexta",
+      desc:"Debe ser docente ordinario del departamento académico y tener especialidad o experiencia en la línea. La asesoría es gratuita. El reporte de uso de IA admite un máximo de 20 % y se adjunta al reporte de similitud de Turnitin.",
+      docs:[D("Carta de aceptación del asesor","Asesor"),D("Reporte de originalidad (similitud)","Asesor"),D("Reporte de uso de inteligencia artificial","Asesor")]}),
+    N("n3","tes",2,"step","Presenta solicitud y expediente al Decano",{ph:1,t0:true,d:0,dl:"Día 0",art:"Art. 14.1.3",
+      desc:"La solicitud va dirigida al Decanato y propone al asesor y al jurado. Se presenta en digital por la mesa de partes virtual de la facultad o al correo institucional de la secretaría del Decanato.",
+      docs:[D("Solicitud al Decano (propone asesor y jurado)","Tesista"),D("Proyecto de tesis digital","Tesista"),D("Carta de aceptación del asesor","Asesor"),D("Reporte de originalidad","Asesor"),D("Reporte de uso de IA","Asesor")]}),
+    N("n4","dec",3,"step","Decano remite el expediente a la Dirección de Escuela",{ph:2,d:1,art:"Art. 14.1.4"}),
+    N("n5","dir",4,"step","Designa asesor y propone al jurado",{ph:2,d:3,art:"Arts. 14.1.4 y 25",
+      desc:"Propone presidente, secretario y vocal, del departamento académico respectivo o vinculados a la línea de investigación. El jurado lo integran tres docentes ordinarios y preside el de mayor precedencia. No pueden integrarlo el rector, los vicerrectores, docentes con licencia ni parientes del interesado hasta el 4.º grado de consanguinidad o 2.º de afinidad."}),
+    N("n6","dec",5,"resolution","Resolución de Decanato",{ph:2,d:2,art:"Art. 14.1.4",
+      desc:"Aprueba la designación del asesor y del jurado, con cargo a dar cuenta al Consejo de Facultad.",docs:[D("Resolución de Decanato","Decanato")]}),
+    N("n7","dec",6,"step","Notifica al jurado resolución y expediente",{ph:2,d:2,art:"Art. 14.1.4.1",
+      desc:"La notificación se hace por correo institucional e incluye el expediente del proyecto."}),
+    N("n8","jur",7,"step","Revisa el proyecto",{ph:3,d:5,art:"Art. 14.1.5",
+      desc:"Emite conformidad o no conformidad mediante un informe detallado de observaciones.",docs:[D("Informe del jurado (conformidad u observaciones)","Jurado")]}),
+    N("n9","jur",8,"decision","¿Hay conformidad?",{ph:3,art:"Art. 14.1.5"}),
+    N("n10","tes",9,"step","Subsana con apoyo del asesor",{ph:3,d:5,dl:"hasta 5 d háb.",art:"Art. 14.1.5",
+      desc:"Cuenta con hasta cinco días hábiles desde la notificación. Luego las correcciones vuelven al jurado.",docs:[D("Proyecto corregido","Tesista")]}),
+    N("n11","jur",10,"decision","¿Conformidad tras subsanar?",{ph:3,art:"Arts. 14.1.5 a 14.1.7",
+      desc:"El reglamento no fija un plazo expreso para esta segunda revisión. Después de las observaciones, el jurado no puede formular otras. Si emite no conformidad por segunda vez, hay que presentar un nuevo proyecto."}),
+    N("nx","tes",11,"end","Presenta un nuevo proyecto",{ph:3,art:"Art. 14.1.6",desc:"Con la segunda no conformidad se reinicia el trámite con un proyecto nuevo."}),
+    N("n12","jur",12,"step","Presidente eleva el informe y pide la aprobación",{ph:4,d:2,art:"Art. 14.1.5",
+      desc:"El presidente del jurado eleva el informe de conformidad a la Dirección de Escuela y solicita la aprobación del proyecto.",docs:[D("Informe de conformidad","Jurado")]}),
+    N("n13","dir",13,"step","Dirección remite el expediente al Decanato",{ph:4,d:1,art:"Art. 14.1.5"}),
+    N("n14","cf",14,"resolution","Resolución de Consejo de Facultad que aprueba el proyecto",{ph:4,dl:"sin plazo expreso",nop:true,art:"Art. 14.1.8",
+      desc:"El reglamento no indica cuántos días tiene el Consejo de Facultad para aprobar. Esta resolución se exige luego para el informe final.",docs:[D("Resolución de Consejo de Facultad","Consejo de Facultad")]}),
+    N("n15","tes",15,"end","Desarrolla el informe final de tesis",{ph:4,art:"Art. 14.1.8",
+      desc:"Plazo para elaborar el informe final: mínimo 4 meses y máximo 1 año, prorrogable por 1 año adicional. Continúa en el flujograma 2."})
+  ],
+  edges:[
+    E("n1","n2"),E("n2","n3"),E("n3","n4"),E("n4","n5"),E("n5","n6"),E("n6","n7"),E("n7","n8"),E("n8","n9"),
+    E("n9","n12",{key:"si",label:"Sí",exit:"right",enter:"right"}),
+    E("n9","n10",{key:"no",label:"No",exit:"left",enter:"top"}),
+    E("n10","n11"),
+    E("n11","n12",{key:"si",label:"Sí"}),
+    E("n11","nx",{key:"no",label:"No (2.ª vez)",exit:"left",enter:"top"}),
+    E("nx","n1",{kind:"loop",exit:"left",enter:"left",label:"Reinicia"}),
+    E("n12","n13"),E("n13","n14"),E("n14","n15")
+  ],
+  scenarios:[
+    {id:"a",label:"Sin observaciones",ch:{n9:"si"}},
+    {id:"b",label:"Una no conformidad y luego conforme",ch:{n9:"no",n11:"si"}},
+    {id:"c",label:"Segunda no conformidad (nuevo proyecto)",ch:{n9:"no",n11:"no"},extra:"Se reinicia el trámite con un proyecto nuevo."}
+  ],
+  ckTitle:"Expediente de presentación (Art. 14.1.3)",
+  ck:[
+    {g:"",items:[["Solicitud dirigida al Decano, con propuesta de asesor y jurado","Tesista"],["Proyecto de tesis en digital (Anexo 2 o 3)","Tesista"],["Carta de aceptación del asesor","Asesor"],["Reporte de originalidad (similitud, Turnitin)","Asesor"],["Reporte de uso de IA (máximo 20 %)","Asesor"]]}
+  ],
+  notes:[
+    "Los plazos de cada recuadro son máximos para esa dependencia. La suma por escenario es una referencia, no una garantía de fecha.",
+    "Sin plazo expreso en el reglamento: la segunda revisión del jurado tras subsanar y la resolución del Consejo de Facultad. No entran en la suma.",
+    "El jurado que incumpla los plazos es reemplazado de oficio por propuesta del Director de Escuela y se anota un demérito en su legajo (Art. 14.1.7).",
+    "Con la aprobación del proyecto empieza a correr el plazo del informe final: de 4 meses a 1 año, prorrogable 1 año más (Art. 14.1.8).",
+    "Las facultades pueden tener normas complementarias (Disp. Primera). Confirma con la secretaría de la FAT si hay formatos o requisitos adicionales."
+  ]
+},
+tesis:{
+  lanes:["tes","ase","dec","dir","jur","cf","ugt","rec"],
+  start:"m1",
+  phases:["1 · Requisitos previos","2 · Presentación","3 · Revisión y subsanación","4 · Programación y sustentación","5 · Titulación (Art. 29)"],
+  segLabels:["Presentación hasta programar la sustentación","Trámite del título tras sustentar"],
+  nodes:[
+    N("m1","tes",0,"start","Redacta el informe final de tesis",{ph:0,art:"Arts. 14.1.8, 15, 16 y 17.1 · Anexos 1, 4 y 5",
+      desc:"Parte de un proyecto aprobado por resolución de Consejo de Facultad. Debe respetar el plazo de 4 meses a 1 año (prorrogable 1 año). El trámite del título exige tener el grado de bachiller. Estructura: Anexo 4 (cuantitativo) o 5 (cualitativo), con carátula del Anexo 1.",
+      docs:[D("Informe final de tesis digital (Anexo 4 o 5)","Tesista")]}),
+    N("m2","ase",1,"step","Otorga conformidad y emite sus reportes",{ph:0,art:"Art. 17.1.1 · Disp. Sexta",
+      desc:"Firma la carta de conformidad y emite el reporte de similitud (Turnitin) y el de uso de IA, con máximo de 20 %.",
+      docs:[D("Carta de conformidad del asesor","Asesor"),D("Reporte de originalidad","Asesor"),D("Reporte de uso de IA","Asesor")]}),
+    N("m3","tes",2,"step","Presenta solicitud y expediente al Decano",{ph:1,t0:true,d:0,dl:"Día 0",art:"Art. 17.1.1",
+      desc:"Se presenta de forma digital por la mesa de partes virtual de la facultad.",
+      docs:[D("Solicitud al Decano para aprobar el informe final","Tesista"),D("Informe final de tesis","Tesista"),D("Carta de conformidad del asesor","Asesor"),D("Reporte de originalidad","Asesor"),D("Reporte de uso de IA","Asesor"),D("Resolución de Consejo de Facultad que aprobó el proyecto","Consejo de Facultad")]}),
+    N("m4","dec",3,"step","Decano remite el expediente a la Dirección",{ph:2,d:1,art:"Art. 17.1.2"}),
+    N("m5","dir",4,"step","Dirección remite el informe al jurado",{ph:2,d:2,art:"Art. 17.1.2"}),
+    N("m6","jur",5,"step","Presidente coordina y emite el pronunciamiento",{ph:2,d:15,dl:"15 días (sin precisar háb.)",amb:true,art:"Art. 17.1.2",
+      desc:"El presidente coordina con los demás miembros y emite la conformidad o la no conformidad, con informe detallado si hay observaciones. Se notifica al bachiller por correo institucional. El reglamento dice 15 días y no aclara si son hábiles; aquí se cuentan como hábiles.",
+      docs:[D("Informe del jurado","Jurado")]}),
+    N("m7","jur",6,"decision","¿Hay conformidad?",{ph:2,art:"Art. 17.1.2"}),
+    N("m8","tes",7,"step","Subsana con apoyo del asesor",{ph:2,d:10,dl:"hasta 10 d háb.",art:"Art. 17.1.2",desc:"Cuenta con diez días hábiles desde la notificación.",docs:[D("Informe corregido","Tesista")]}),
+    N("m9","jur",8,"step","Jurado revisa las correcciones",{ph:2,d:5,art:"Art. 17.1.2"}),
+    N("m10","jur",9,"decision","¿Conformidad en la 2.ª revisión?",{ph:2,art:"Art. 17.1.2",desc:"Si el jurado emite no conformidad por segunda vez, las observaciones se subsanan en 3 días hábiles."}),
+    N("m11","tes",10,"step","Subsana por segunda vez",{ph:2,d:3,dl:"hasta 3 d háb.",art:"Art. 17.1.2",desc:"Las correcciones se remiten al jurado para que emita la conformidad."}),
+    N("m12","jur",11,"step","Otorga conformidad: informe expedito",{ph:2,dl:"sin plazo expreso",nop:true,art:"Art. 17.1.2",
+      desc:"El jurado comunica a la Dirección de Escuela que el informe está expedito para sustentar. El reglamento no fija plazo para esta comunicación."}),
+    N("m13","dir",12,"step","Programa fecha, hora y lugar de sustentación",{ph:3,d:3,dl:"máx. 3 d háb.",art:"Art. 17.1.2"}),
+    N("m14","jur",13,"step","Acto de sustentación y calificación",{ph:3,art:"Art. 17.1.3",
+      desc:"El jurado delibera en reserva, califica en escala de 00 a 20 sin decimales y redacta el acta. El secretario la lee al tesista. Si el tesista no asiste, se levanta acta de inconcurrencia y se reprograma dentro de 30 días calendario.",
+      docs:[D("Acta de sustentación","Jurado")]}),
+    N("m15","jur",14,"decision","¿Aprueba (14 a 20)?",{ph:3,art:"Arts. 17.1.3 y 17.1.4",desc:"19–20 aprobado con excelencia · 17–18 con mención · 14–16 aprobado · 13 o menos desaprobado."}),
+    N("m16","dir",15,"step","Reprograma la sustentación",{ph:3,dl:"hasta 2 meses después",nop:true,art:"Art. 17.1.4",
+      desc:"El presidente remite el acta a la Dirección, que fija nueva fecha dentro de 2 meses. Si desaprueba por segunda vez, hay que presentar un nuevo proyecto de tesis (flujograma 1)."}),
+    N("m17","cf",15,"resolution","Resolución de Consejo de Facultad que aprueba el informe",{ph:3,dl:"sin plazo expreso",nop:true,art:"Art. 27.4",
+      desc:"El Art. 27.4 exige adjuntar la resolución que aprueba el informe de tesis, junto con el acta de sustentación. El Art. 17.1 no fija plazo para emitirla.",docs:[D("Resolución de Consejo de Facultad","Consejo de Facultad")]}),
+    N("m18","tes",16,"step","Presenta solicitud de título y requisitos",{ph:4,t0:true,d:0,dl:"Día 0",art:"Arts. 17.1.5, 27 y 29",
+      desc:"El trámite se inicia en la secretaría del Decanato. Requiere el informe digital en el formato del Repositorio Institucional, el acta de sustentación y la resolución que aprueba el informe.",
+      docs:[D("Solicitud al Decano","Tesista"),D("Informe final digital (formato del Repositorio)","Tesista"),D("Acta de sustentación","Jurado"),D("Resolución de Consejo de Facultad","Consejo de Facultad"),D("Recibo de pago por derecho de título","Tesista")]}),
+    N("m19","dec",17,"step","Secretaría remite a Grados y Títulos",{ph:4,d:1,art:"Art. 29"}),
+    N("m20","ugt",18,"step","Revisa el expediente",{ph:4,d:3,dl:"hasta 3 d háb.",art:"Art. 29"}),
+    N("m21","tes",19,"step","Subsana observaciones, si las hay",{ph:4,d:2,dl:"hasta 2 d háb.",opt:true,art:"Art. 29",desc:"Solo si la Unidad encuentra observaciones; se coordinan directamente con el interesado."}),
+    N("m22","ugt",20,"step","Informa al Director de Escuela",{ph:4,d:3,art:"Art. 29"}),
+    N("m23","dir",21,"step","Eleva al Decano",{ph:4,d:1,art:"Art. 29"}),
+    N("m24","dir",22,"step","Remite el expediente al Consejo de Facultad",{ph:4,d:2,art:"Art. 29"}),
+    N("m25","cf",23,"resolution","Resolución de Consejo de Facultad aprueba el título",{ph:4,dl:"sin plazo expreso",nop:true,art:"Art. 29"}),
+    N("m26","dec",24,"step","Decanato eleva el expediente al Rectorado",{ph:4,d:2,art:"Art. 29"}),
+    N("m27","rec",25,"resolution","Consejo Universitario confiere el título",{ph:4,dl:"sin plazo expreso",nop:true,art:"Art. 29",desc:"Se emite la resolución correspondiente. Los diplomas llevan las firmas del Rector, la Secretaria General, el Decano y, si corresponde, el Director de la Escuela de Posgrado."}),
+    N("m28","rec",26,"end","Diploma inscrito en SUNEDU y entregado",{ph:4,d:45,dl:"máx. 45 d háb.",art:"Art. 29"})
+  ],
+  edges:[
+    E("m1","m2"),E("m2","m3"),E("m3","m4"),E("m4","m5"),E("m5","m6"),E("m6","m7"),
+    E("m7","m12",{key:"si",label:"Sí",exit:"right",enter:"right"}),
+    E("m7","m8",{key:"no",label:"No",exit:"left",enter:"top"}),
+    E("m8","m9"),E("m9","m10"),
+    E("m10","m12",{key:"si",label:"Sí"}),
+    E("m10","m11",{key:"no",label:"No",exit:"left",enter:"top"}),
+    E("m11","m12"),E("m12","m13"),E("m13","m14"),E("m14","m15"),
+    E("m15","m17",{key:"si",label:"Sí",exit:"right",enter:"top"}),
+    E("m15","m16",{key:"no",label:"No",exit:"left",enter:"top"}),
+    E("m16","m14",{kind:"loop",exit:"left",enter:"left",label:"Nueva fecha"}),
+    E("m17","m18"),E("m18","m19"),E("m19","m20"),
+    E("m20","m22"),E("m20","m21",{kind:"alt",label:"Con observaciones"}),E("m21","m22",{kind:"alt"}),
+    E("m22","m23"),E("m23","m24"),E("m24","m25"),E("m25","m26"),E("m26","m27"),E("m27","m28")
+  ],
+  scenarios:[
+    {id:"a",label:"Conforme a la 1.ª revisión",ch:{m7:"si",m15:"si"}},
+    {id:"b",label:"Una no conformidad",ch:{m7:"no",m10:"si",m15:"si"}},
+    {id:"c",label:"Dos no conformidades",ch:{m7:"no",m10:"no",m15:"si"}},
+    {id:"d",label:"Desaprueba la 1.ª sustentación",ch:{m7:"si",m15:"no"},extra:"Tras desaprobar, la nueva sustentación se programa dentro de 2 meses. Con una segunda desaprobación se presenta un nuevo proyecto."}
+  ],
+  ckTitle:"Expedientes de la tesis y del título",
+  ck:[
+    {g:"Aprobación del informe final (Art. 17.1.1)",items:[["Solicitud dirigida al Decano","Tesista"],["Informe final de tesis en digital (Anexo 4 o 5, carátula Anexo 1)","Tesista"],["Carta de conformidad del asesor","Asesor"],["Reporte de originalidad (similitud, Turnitin)","Asesor"],["Reporte de uso de IA (máximo 20 %)","Asesor"],["Resolución de Consejo de Facultad que aprobó el proyecto","Consejo de Facultad"]]},
+    {g:"Solicitud del título profesional (Art. 27)",items:[["Solicitud dirigida al Decano","Tesista"],["Copia simple del certificado de estudios","Tesista"],["Copia simple del grado de bachiller","Tesista"],["Informe final digital (formato del Repositorio), acta de sustentación y resolución que lo aprueba","Tesista"],["Copia simple del DNI ampliada al 150 %","Tesista"],["Tres fotografías tamaño pasaporte, a color, fondo blanco, traje formal","Tesista"],["Recibo de pago por derecho de título","Tesista"],["Otros requisitos que norme la facultad","Facultad"]]}
+  ],
+  notes:[
+    "Para tramitar el título se necesita el grado de bachiller (Arts. 15 y 16). El flujograma parte de ahí.",
+    "El plazo de 15 días del presidente del jurado no dice si son hábiles. La suma los cuenta como hábiles; confirma en la Dirección de Escuela.",
+    "Sin plazo expreso: la conformidad tras la segunda subsanación, las resoluciones del Consejo de Facultad y del Consejo Universitario, y la fecha misma de sustentación. No entran en la suma.",
+    "Si no asistes a sustentar sin justificar, se levanta acta de inconcurrencia y se reprograma dentro de 30 días calendario (Art. 17.1.3).",
+    "Si desapruebas la sustentación, la nueva fecha es dentro de 2 meses. Si desapruebas por segunda vez, empiezas con un nuevo proyecto (Art. 17.1.4).",
+    "Los jurados que no cumplan los plazos son reemplazados de oficio y se registra un demérito en su legajo."
+  ]
+}};
+
+/* ---------- Geometría ---------- */
+const LW=178, NW=162, NH=100, ROWH=142, BAND=58, PADL=46, PADR=46, TOP0=10;
+const $=s=>document.querySelector(s);
+const state={flow:"proyecto",scen:{},role:null,pinned:null};
+const svgNS="http://www.w3.org/2000/svg";
+
+function layout(f){
+  const nl=f.lanes.length;
+  const phaseOfRow={};
+  f.nodes.forEach(n=>{phaseOfRow[n.row]=n.ph});
+  const pos={};
+  f.nodes.forEach(n=>{
+    const cx=PADL+f.lanes.indexOf(n.lane)*LW+LW/2;
+    const top=TOP0+(n.ph+1)*BAND+n.row*ROWH;
+    pos[n.id]={cx,top,bot:top+NH,left:cx-NW/2,right:cx+NW/2,cy:top+NH/2};
+  });
+  const maxRow=Math.max(...f.nodes.map(n=>n.row));
+  const H=TOP0+(f.phases.length)*BAND+(maxRow+1)*ROWH+10;
+  return {pos,W:PADL+nl*LW+PADR,H,nl};
+}
+function firstRowOfPhase(f,p){return Math.min(...f.nodes.filter(n=>n.ph===p).map(n=>n.row))}
+
+function pathPoints(e,pos){
+  const a=pos[e.from],b=pos[e.to],ex=e.exit||"bottom",en=e.enter||"top";
+  let p;
+  if(ex==="bottom"&&en==="top"){
+    if(Math.abs(a.cx-b.cx)<1) p=[[a.cx,a.bot],[b.cx,b.top]];
+    else{const m=a.bot+19;p=[[a.cx,a.bot],[a.cx,m],[b.cx,m],[b.cx,b.top]]}
+  }else if((ex==="left"||ex==="right")&&en==="top"){
+    const sx=ex==="left"?a.left:a.right;p=[[sx,a.cy],[b.cx,a.cy],[b.cx,b.top]];
+  }else if(ex==="right"&&en==="right"){
+    const gx=Math.max(a.right,b.right)+10;p=[[a.right,a.cy],[gx,a.cy],[gx,b.cy],[b.right,b.cy]];
+  }else{ // left-left
+    const gx=Math.min(a.left,b.left)-(a.cx===b.cx?16:10);p=[[a.left,a.cy],[gx,a.cy],[gx,b.cy],[b.left,b.cy]];
+  }
+  return p;
+}
+function labelPos(e,pos){
+  const a=pos[e.from],ex=e.exit||"bottom";
+  if(ex==="left")return {x:a.left-6,y:a.cy-7,a:"end"};
+  if(ex==="right")return {x:a.right+6,y:a.cy-7,a:"start"};
+  return {x:a.cx+8,y:a.bot+15,a:"start"};
+}
+
+/* ---------- Ruta y acumulados ---------- */
+function computePath(f,ch){
+  const byId=Object.fromEntries(f.nodes.map(n=>[n.id,n]));
+  const path=[],used=new Set(),seen=new Set();
+  let id=f.start;
+  while(id){
+    path.push(id);seen.add(id);
+    const es=f.edges.filter(e=>e.from===id&&e.kind!=="alt");
+    if(!es.length)break;
+    let e=es[0];
+    if(byId[id].type==="decision"){const k=ch[id]||"si";e=es.find(x=>x.key===k)||es[0]}
+    used.add(e.from+">"+e.to);
+    id=seen.has(e.to)?null:e.to;
+  }
+  const info={},segs=[];let cum=0,seg=-1;
+  path.forEach(pid=>{
+    const n=byId[pid];
+    if(n.t0){seg++;cum=0;segs[seg]={total:0,parts:[],nop:0}}
+    if(seg<0)return;
+    if(n.d!=null){cum+=n.d;segs[seg].total=cum;if(n.d>0)segs[seg].parts.push(n)}
+    else if(n.nop)segs[seg].nop++;
+    info[pid]={cum,seg};
+  });
+  return {path:new Set(path),used,info,segs};
+}
+function getD0(){const v=$("#d0").value;if(!v)return null;const [y,m,d]=v.split("-").map(Number);return new Date(y,m-1,d,12)}
+function addBiz(d,n){const r=new Date(d);let k=0;while(k<n){r.setDate(r.getDate()+1);const w=r.getDay();if(w!==0&&w!==6)k++}return r}
+const fmt=d=>d.toLocaleDateString("es-PE",{day:"2-digit",month:"short"}).replace(".","");
+
+/* ---------- Render ---------- */
+function render(){
+  const f=FLOWS[state.flow];
+  const sc=f.scenarios.find(s=>s.id===state.scen[state.flow])||f.scenarios[0];
+  state.scen[state.flow]=sc.id;
+  const R=computePath(f,sc.ch);
+  const L=layout(f);
+  const d0=getD0();
+
+  document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected",t.dataset.flow===state.flow));
+
+  // escenarios
+  $("#scen").innerHTML=f.scenarios.map(s=>`<label><input type="radio" name="sc" value="${s.id}" ${s.id===sc.id?"checked":""}>${s.label}</label>`).join("");
+
+  // resumen
+  let html="";
+  R.segs.forEach((s,i)=>{
+    const bar=s.parts.map(n=>`<i style="--c:var(--c-${n.lane});flex:${n.d}" title="${n.t}: ${n.d} d"></i>`).join("");
+    const end=(i===0&&d0)?`<p class="s">Fecha límite estimada: <b>${fmt(addBiz(d0,s.total))}</b> (${s.total} días hábiles desde el ${fmt(d0)}).</p>`:"";
+    html+=`<div class="card"><p class="k">${f.segLabels[i]}</p><div class="v">${s.total}<span>días hábiles</span></div>${end}<p class="s">${s.nop?s.nop+" paso(s) sin plazo expreso no están sumados.":"Todos los pasos de esta ruta tienen plazo."}</p><div class="bar" aria-label="Días por rol">${bar}</div></div>`;
+  });
+  if(sc.extra)html+=`<div class="card warnbox" style="grid-column:1/-1">${sc.extra}</div>`;
+  $("#summary").innerHTML=html;
+
+  // leyenda
+  const used=f.lanes;
+  $("#legend").innerHTML=used.map(r=>`<button class="role" style="--c:var(--c-${r})" data-role="${r}" aria-pressed="${state.role===r}">${ROLES[r].n}</button>`).join("")
+   +`<div class="shapes"><span><i class="sh pl"></i>Inicio o fin</span><span><i class="sh st"></i>Paso</span><span><i class="sh dc"></i>Decisión</span><span><i class="sh rs"></i>Resolución</span></div>`;
+
+  // escenario
+  const st=$("#stage");
+  st.style.width=L.W+"px";st.style.height=L.H+"px";
+  let h="";
+  f.lanes.forEach((r,i)=>{h+=`<div class="stripe" style="--c:var(--c-${r});left:${PADL+i*LW}px;width:${LW}px"></div>`});
+  f.phases.forEach((p,i)=>{
+    const top=TOP0+firstRowOfPhase(f,i)*ROWH+i*BAND;
+    let sum=0;f.nodes.forEach(n=>{if(n.ph===i&&R.path.has(n.id)&&n.d>0)sum+=n.d});
+    h+=`<div class="band" style="top:${top}px;height:${BAND-8}px"><div class="ph">${p}${sum?`<b>Σ ${sum} d háb.</b>`:""}</div>`
+      +f.lanes.map((r,j)=>`<span class="ln" style="--c:var(--c-${r});left:${PADL+j*LW}px;width:${LW}px">${ROLES[r].n}</span>`).join("")+`</div>`;
+  });
+  // aristas
+  let sv=`<svg class="edges" width="${L.W}" height="${L.H}"><defs>`
+   +`<marker id="mo" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" class="mk-on"/></marker>`
+   +`<marker id="mf" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="mk-off"/></marker>`
+   +`<marker id="ml" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" class="mk-loop"/></marker></defs>`;
+  f.edges.forEach(e=>{
+    const on=R.used.has(e.from+">"+e.to);
+    const p=pathPoints(e,L.pos);
+    const cls="e"+(e.kind==="alt"?" alt":"")+(e.kind==="loop"?" loop":"")+(on?" on":" off");
+    const mk=e.kind==="loop"?"ml":(on?"mo":"mf");
+    sv+=`<path class="${cls}" d="M${p.map(q=>q.join(",")).join("L")}" marker-end="url(#${mk})"/>`;
+    if(e.label){const lp=labelPos(e,L.pos);sv+=`<text class="elabel${on?"":" off"}" x="${lp.x}" y="${lp.y}" text-anchor="${lp.a}">${e.label}</text>`}
+  });
+  sv+="</svg>";
+  h+=sv;
+  // nodos
+  f.nodes.forEach(n=>{
+    const p=L.pos[n.id],inf=R.info[n.id];
+    const cls=["node",n.type==="start"||n.type==="end"?"pill":n.type,n.opt?"opt":"",R.path.has(n.id)?"":"off",state.role&&state.role!==n.lane?"rdim":"",state.pinned===n.id?"sel":""].join(" ");
+    let chips="";
+    const tl=n.dl||(n.d!=null?(n.d===0?"Día 0":n.d+" d háb."):"");
+    if(tl&&n.type!=="decision")chips+=`<span class="chip${n.nop?" nop":""}">${tl}</span>`;
+    if(inf&&n.d!=null&&n.d>0&&R.path.has(n.id))chips+=`<span class="chip cum">Día ${inf.cum}</span>`;
+    if(inf&&inf.seg===0&&d0&&n.d!=null&&R.path.has(n.id)&&n.t0!==true)chips+=`<span class="chip dt">≈ ${fmt(addBiz(d0,inf.cum))}</span>`;
+    if(n.docs&&n.docs.length&&n.type!=="decision")chips+=`<span class="chip">▤ ${n.docs.length}</span>`;
+    let inner;
+    if(n.type==="decision")inner=`<span class="in"><span class="t">${n.t}</span></span>`;
+    else if(n.type==="resolution")inner=`<span class="in"><span class="t">${n.t}</span><span class="chips">${chips}</span></span>`;
+    else inner=`<span class="t">${n.t}</span><span class="chips">${chips}</span>`;
+    h+=`<button class="${cls}" data-id="${n.id}" style="--c:var(--c-${n.lane});left:${p.left}px;top:${p.top}px;width:${NW}px;height:${NH}px">${inner}</button>`;
+  });
+  st.innerHTML=h;
+
+  // checklist y notas
+  $("#ck-h").textContent=f.ckTitle;
+  let c="";let total=0;
+  f.ck.forEach((g,gi)=>{
+    c+=(g.g?`<p class="ctl-title" style="margin-top:${gi?14:0}px">${g.g}</p>`:"")+`<ul class="check">`
+      +g.items.map((it,i)=>{total++;return `<li><label><input type="checkbox" data-ck><span class="tx">${it[0]}</span><span class="who">${it[1]}</span></label></li>`}).join("")+`</ul>`;
+  });
+  $("#ck").innerHTML=`<p class="prog" id="prog">0 de ${total} listos</p>`+c;
+  $("#notes").innerHTML=f.notes.map(x=>`<li>${x}</li>`).join("");
+}
+
+/* ---------- Tooltip ---------- */
+const tip=$("#tip");
+function nodeById(id){return FLOWS[state.flow].nodes.find(n=>n.id===id)}
+function showTip(id,pin){
+  const f=FLOWS[state.flow],n=nodeById(id);
+  const sc=f.scenarios.find(s=>s.id===state.scen[state.flow]);
+  const R=computePath(f,sc.ch),inf=R.info[id];
+  const d0=getD0();
+  let dl="";
+  const tl=n.dl||(n.d!=null?(n.d===0?"Día 0 (presentación)":n.d+" días hábiles"):"");
+  if(tl)dl+=`<dt>Plazo</dt><dd>${tl}</dd>`;
+  else if(n.type!=="decision")dl+=`<dt>Plazo</dt><dd>No tiene plazo propio</dd>`;
+  if(inf&&R.path.has(id)){dl+=`<dt>Acumulado</dt><dd>Día ${inf.cum} de la ruta elegida${inf.seg===0&&d0&&n.d!=null?` · ≈ ${fmt(addBiz(d0,inf.cum))}`:""}</dd>`}
+  else if(!R.path.has(id))dl+=`<dt>Ruta</dt><dd>No está en el escenario elegido</dd>`;
+  dl+=`<dt>Base</dt><dd>${n.art||"—"}</dd>`;
+  const docs=n.docs&&n.docs.length?`<p class="sub" style="margin-top:10px;color:var(--ink);font-weight:600">Documentos</p><ul>${n.docs.map(d=>`<li>${d.n} <span style="color:var(--muted)">· ${d.w}</span></li>`).join("")}</ul>`:"";
+  $("#tipc").innerHTML=`<span class="rl">${ROLES[n.lane].f}</span><h3>${n.t}</h3>${n.desc?`<div>${n.desc}</div>`:""}<dl>${dl}</dl>${docs}${n.amb?`<p class="sub">El texto del reglamento no precisa si son días hábiles.</p>`:""}`;
+  tip.style.setProperty("--c",`var(--c-${n.lane})`);
+  tip.classList.add("show");tip.classList.toggle("pinned",!!pin);
+  const el=document.querySelector(`.node[data-id="${id}"]`).getBoundingClientRect();
+  const tw=tip.offsetWidth,th=tip.offsetHeight,vw=innerWidth,vh=innerHeight;
+  let x=el.right+12;if(x+tw>vw-8)x=el.left-tw-12;if(x<8)x=Math.max(8,Math.min(vw-tw-8,el.left));
+  let y=el.top;if(y+th>vh-8)y=vh-th-8;if(y<8)y=8;
+  tip.style.left=x+"px";tip.style.top=y+"px";
+}
+function hideTip(force){if(state.pinned&&!force)return;tip.classList.remove("show","pinned")}
+function unpin(){state.pinned=null;hideTip(true);document.querySelectorAll(".node.sel").forEach(n=>n.classList.remove("sel"))}
+
+/* ---------- Eventos ---------- */
+document.addEventListener("click",e=>{
+  const tab=e.target.closest(".tab");
+  if(tab){state.flow=tab.dataset.flow;state.role=null;unpin();location.hash=state.flow;render();return}
+  const role=e.target.closest(".role");
+  if(role){state.role=state.role===role.dataset.role?null:role.dataset.role;render();return}
+  if(e.target.closest("#tip .x")){unpin();return}
+  const nd=e.target.closest(".node");
+  if(nd){
+    const id=nd.dataset.id;
+    if(state.pinned===id){unpin();return}
+    state.pinned=id;document.querySelectorAll(".node.sel").forEach(n=>n.classList.remove("sel"));nd.classList.add("sel");showTip(id,true);return;
+  }
+  if(!e.target.closest("#tip")&&state.pinned)unpin();
+});
+document.addEventListener("change",e=>{
+  if(e.target.name==="sc"){state.scen[state.flow]=e.target.value;unpin();render()}
+  if(e.target.id==="d0"){render()}
+  if(e.target.matches("[data-ck]")){const all=[...document.querySelectorAll("[data-ck]")];$("#prog").textContent=`${all.filter(x=>x.checked).length} de ${all.length} listos`}
+});
+const stage=$("#stage");
+stage.addEventListener("mouseover",e=>{const nd=e.target.closest(".node");if(nd&&!state.pinned)showTip(nd.dataset.id,false)});
+stage.addEventListener("mouseout",e=>{if(e.target.closest(".node")&&!state.pinned)hideTip()});
+stage.addEventListener("focusin",e=>{const nd=e.target.closest(".node");if(nd&&!state.pinned)showTip(nd.dataset.id,false)});
+stage.addEventListener("focusout",()=>{if(!state.pinned)hideTip()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")unpin()});
+window.addEventListener("hashchange",()=>{const h=location.hash.slice(1);if(FLOWS[h]&&h!==state.flow){state.flow=h;unpin();render()}});
+
+/* ---------- Inicio ---------- */
+(function init(){
+  const t=new Date(),z=n=>String(n).padStart(2,"0");
+  $("#d0").value=`${t.getFullYear()}-${z(t.getMonth()+1)}-${z(t.getDate())}`;
+  const h=location.hash.slice(1);if(FLOWS[h])state.flow=h;
+  render();
+})();
+</script>
+</body>
+</html>
